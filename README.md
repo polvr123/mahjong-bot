@@ -1,0 +1,2 @@
+# mahjong-bot
+riichi mahjong :) 
