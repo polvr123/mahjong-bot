@@ -21,14 +21,15 @@ def play_hand(agents: list, dealer: int, seed: int):
     return g.result
 
 
-def evaluate(agent, baseline_factory: Callable[[], object] = HeuristicAgent, episodes: int = 200, seed: int = 0) -> dict:
+def evaluate(agent, baseline_factory: Callable[..., object] = HeuristicAgent, episodes: int = 200, seed: int = 0) -> dict:
     """`agent` sits at seat (i % 4) against 3 baselines; the dealer also rotates, so every
-    seat/dealer combination is covered evenly."""
+    seat/dealer combination is covered evenly. `baseline_factory(seed=...)` builds each baseline bot;
+    with the same `seed` the hands and the baselines' tie-breaks repeat exactly."""
     wins = draws = dealt_in = 0
     points = 0.0
     for i in range(episodes):
         seat, dealer = i % 4, (i // 4) % 4
-        agents = [baseline_factory() for _ in range(4)]
+        agents = [baseline_factory(seed=seed * 7919 + i * 4 + k) for k in range(4)]  # seeded -> reproducible
         agents[seat] = agent
         res = play_hand(agents, dealer, seed=seed * 100003 + i)
         wins += res.winner == seat

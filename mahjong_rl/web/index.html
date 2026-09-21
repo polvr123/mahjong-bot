@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mahjong ♡ bot</title>
+<style>
+  :root {
+    --bg: #E9DDF9; --text: #000; --nav-muted: #5f5670; --muted: #74698a;
+    --divider: #a887d6; --link: #5a3e8c;
+    --pill: #f6efff; --card: rgba(255, 255, 255, .55); --tile: #fffaff; --tile-edge: #d9c8f0;
+    --man: #c2455f; --pin: #3f68b0; --sou: #3f8a5f; --honor: #4a3a5e;
+    --win: #2f8a5a; --lose: #c2455f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: Georgia, "Times New Roman", serif; min-height: 100vh; }
+  main { max-width: 860px; margin: 0 auto; padding: 3rem 2rem; text-align: center; }
+
+  /* header + nav, same language as the personal site */
+  h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 1.5rem; display: flex; align-items: center; justify-content: center; gap: .6rem; flex-wrap: wrap; }
+  .logo { font-size: 1.7rem; width: 50px; height: 50px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center;
+          background: var(--card); }
+  .banner-wave { display: inline-flex; }
+  .banner-wave span { display: inline-block; animation: bob 2.4s ease-in-out infinite; color: var(--divider); }
+  .banner-wave span:nth-child(2) { animation-delay: .15s; } .banner-wave span:nth-child(3) { animation-delay: .3s; }
+  .banner-wave span:nth-child(4) { animation-delay: .45s; } .banner-wave span:nth-child(5) { animation-delay: .6s; }
+  .banner-wave span:nth-child(6) { animation-delay: .75s; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+  nav { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: .5rem 1.25rem; margin-bottom: .75rem; }
+  nav a, nav .here { font-size: 1.15rem; white-space: nowrap; }
+  nav a { color: var(--nav-muted); text-decoration: none; cursor: pointer; }
+  nav a:hover { color: var(--text); }
+  nav a.active, nav .here { color: var(--text); font-weight: 600; }
+  nav .here { margin-right: 1rem; }
+  nav .opp { font-size: 1rem; color: var(--muted); display: inline-flex; gap: .7rem; align-items: baseline; }
+  nav .opp a { font-size: 1rem; }
+  .nav-divider { color: var(--divider); letter-spacing: 2px; margin-bottom: 1.5rem; white-space: nowrap; overflow: hidden; text-align: center; }
+
+  /* table */
+  #board { display: grid; grid-template-columns: 1fr minmax(170px, 210px) 1fr; gap: 1.1rem 1.2rem; align-items: start; }
+  .seat h3 { margin: 0 0 .4rem; font-size: 1rem; font-weight: 600; color: var(--nav-muted); }
+  .seat h3::before { content: "✧˖° "; color: var(--divider); font-weight: 400; }
+  .seat h3 .tag { font-weight: 400; font-size: .85rem; color: var(--muted); margin-left: .35rem; }
+  .seat h3 .tag.riichi { color: var(--lose); } .seat h3 .tag.turn { color: var(--link); }
+  .pos-top { grid-column: 2; grid-row: 1; } .pos-left { grid-column: 1; grid-row: 2; }
+  .pos-right { grid-column: 3; grid-row: 2; } .pos-bottom { grid-column: 1 / 4; grid-row: 3; }
+  #center { grid-column: 2; grid-row: 2; text-align: center; align-self: center; background: var(--card); border-radius: 8px; padding: .8rem;
+            display: flex; flex-direction: column; gap: .35rem; align-items: center; justify-content: center; font-size: .95rem; }
+  #center .label { font-size: .85rem; color: var(--muted); }
+  .river { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 250px; min-height: 36px; margin: 0 auto; }
+  .pos-top .river, .pos-bottom .river { max-width: none; }
+
+  .tile { width: 30px; height: 42px; background: var(--tile); color: var(--text); border-radius: 6px; border: 1.5px solid var(--tile-edge);
+          border-bottom-width: 3px; box-shadow: 0 1px 3px rgba(90, 62, 140, .15); display: inline-flex; flex-direction: column;
+          align-items: center; justify-content: center; font-weight: 700; line-height: 1; user-select: none; }
+  .tile .n { font-size: 19px; } .tile .s { font-size: 10px; margin-top: 2px; font-weight: 400; }
+  .tile.man { color: var(--man); } .tile.pin { color: var(--pin); } .tile.sou { color: var(--sou); } .tile.honor { color: var(--honor); }
+  .tile.honor .n { font-size: 21px; } .tile.dragon-f { color: var(--sou); } .tile.dragon-c { color: var(--man); }
+  .tile.small { width: 24px; height: 33px; border-radius: 5px; } .tile.small .n { font-size: 15px; } .tile.small .s { font-size: 8px; }
+  .tile.hl { outline: 2px solid var(--link); outline-offset: 1px; }
+
+  .hand-row { display: flex; align-items: flex-end; justify-content: center; gap: 4px; flex-wrap: wrap; margin-top: .6rem; }
+  .hand-row .tile { width: 44px; height: 60px; } .hand-row .tile .n { font-size: 27px; } .hand-row .tile .s { font-size: 12px; }
+  .hand-row .tile.clickable { cursor: pointer; transition: transform .1s ease, box-shadow .1s ease; }
+  .hand-row .tile.clickable:hover, .hand-row .tile.clickable:focus-visible { transform: translateY(-8px); box-shadow: 0 6px 10px rgba(90, 62, 140, .25); outline: none; }
+  .hand-row .tile.dim { opacity: .4; }
+  .gap { width: 14px; }
+
+  /* controls: quiet rounded pills */
+  #controls { display: flex; justify-content: center; gap: .6rem; margin-top: 1rem; min-height: 40px; align-items: center; flex-wrap: wrap; }
+  button.pill { font: inherit; font-size: 1rem; padding: .35rem 1.1rem; border-radius: 999px; border: 1.5px solid var(--divider);
+                background: var(--pill); color: var(--link); cursor: pointer; transition: background .2s ease, transform .1s ease; }
+  button.pill:hover { transform: translateY(-1px); }
+  button.pill.primary { background: var(--link); border-color: var(--link); color: var(--bg); font-weight: 600; }
+  button.pill.on { background: var(--lose); border-color: var(--lose); color: #fff; }
+  #status { margin-top: .9rem; font-size: 1.05rem; min-height: 1.5rem; }
+  #error { color: var(--lose); min-height: 1.2rem; font-size: .95rem; }
+
+  #result { margin: 1.5rem auto 0; max-width: 640px; border: 1.5px solid var(--divider); border-radius: 8px; padding: 1rem 1.25rem; background: var(--card); display: none; }
+  #result h2 { margin: 0 0 .5rem; font-size: 1.15rem; font-weight: 600; }
+  #result .kao { font-size: 1.05rem; color: var(--link); white-space: pre; margin-bottom: .4rem; }
+  #result ul { list-style: none; margin: .4rem 0; padding: 0; }
+  #result li::before { content: "♡ "; color: var(--divider); }
+  #result table { border-collapse: collapse; margin: .6rem auto; }
+  #result th, #result td { padding: 2px 1.1rem 2px 0; text-align: left; font-size: .95rem; font-weight: 400; }
+  #result th { color: var(--muted); }
+  .pos { color: var(--win); font-weight: 600; } .neg { color: var(--lose); font-weight: 600; }
+  #hands .row { display: flex; align-items: center; justify-content: center; gap: .6rem; margin: .35rem 0; flex-wrap: wrap; }
+  #hands .row span { width: 4.2rem; font-size: .85rem; color: var(--muted); text-align: right; }
+
+  h2.plain { font-weight: 600; font-size: 1.1rem; margin: 1.75rem 0 .6rem; }
+  #log { list-style: none; margin: 0 auto; padding: 0; max-width: 420px; max-height: 180px; overflow: auto; text-transform: lowercase; text-align: left; }
+  #log li { display: flex; gap: .6rem; font-size: 1rem; color: var(--nav-muted); padding: .1rem 0; }
+  #log li::before { content: "♡"; color: var(--divider); } #log li.you { color: var(--text); }
+
+  .cursor-sparkle { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999; color: var(--divider); font-size: 1rem;
+                    animation: sparkle-fade .8s ease-out forwards; }
+  @keyframes sparkle-fade { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                            100% { opacity: 0; transform: translate(-50%, -50%) scale(.4) translateY(-12px); } }
+  @media (prefers-reduced-motion: reduce) { .banner-wave span { animation: none; } .cursor-sparkle { display: none; } }
+
+  @media (max-width: 640px) {
+    main { padding: 2rem 1rem; }
+    #board { grid-template-columns: 1fr 1fr; }
+    .pos-top { grid-column: 1 / 3; grid-row: 1; } #center { grid-column: 1 / 3; grid-row: 2; }
+    .pos-left { grid-column: 1; grid-row: 3; } .pos-right { grid-column: 2; grid-row: 3; } .pos-bottom { grid-column: 1 / 3; grid-row: 4; }
+    .hand-row .tile { width: 34px; height: 48px; } .hand-row .tile .n { font-size: 21px; }
+    .nav-divider { font-size: .8rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>
+    <span class="logo" aria-hidden="true">🀄</span>
+    <span><span class="banner-wave"><span>♡</span><span>｡</span><span>°</span><span>･</span><span>:</span><span>*</span></span>
+      mahjong bot
+      <span class="banner-wave"><span>⋆</span><span>★</span><span>｡</span><span>･</span><span>ﾟ</span><span>☆</span></span></span>
+  </h1>
+  <nav>
+    <span class="here">⋆౨ৎ˚⟡˖ play ˖⟡˚౨ৎ⋆</span>
+    <a id="newBtn" role="button" tabindex="0">new hand</a>
+    <span class="opp">opponents:
+      <a data-opp="ppo" class="active" role="button" tabindex="0">rl bot</a>
+      <a data-opp="heuristic" role="button" tabindex="0">heuristic</a>
+      <a data-opp="random" role="button" tabindex="0">random</a>
+    </span>
+  </nav>
+  <div class="nav-divider">──୨୧──────────୨୧──────────୨୧──────────୨୧──</div>
+
+  <div id="board"></div>
+  <div id="controls"></div>
+  <div id="status"></div>
+  <div id="error"></div>
+  <div id="result"></div>
+  <h2 class="plain">✧ what happened</h2>
+  <ul id="log"></ul>
+</main>
+
+<script>
+// ---- tile rendering: type index 0-8 man, 9-17 pin, 18-26 sou, 27-30 winds E S W N, 31-33 white/green/red dragons
+const WIND_KANJI = ["東", "南", "西", "北"];
+const SUIT = ["man", "pin", "sou"], SUIT_CH = ["萬", "筒", "索"];
+const REL = ["you", "right", "across", "left"];
+const POS = ["bottom", "right", "top", "left"];
+
+function tileEl(tile, cls = "") {
+  const t = Math.floor(tile / 4), el = document.createElement("div");
+  el.className = "tile " + cls;
+  if (t < 27) {
+    el.classList.add(SUIT[Math.floor(t / 9)]);
+    el.innerHTML = `<span class="n">${t % 9 + 1}</span><span class="s">${SUIT_CH[Math.floor(t / 9)]}</span>`;
+  } else {
+    el.classList.add("honor");
+    const ch = t < 31 ? WIND_KANJI[t - 27] : ["白", "發", "中"][t - 31];
+    if (t === 32) el.classList.add("dragon-f");
+    if (t === 33) el.classList.add("dragon-c");
+    el.innerHTML = `<span class="n">${ch}</span>`;
+  }
+  el.dataset.type = t;
+  return el;
+}
+const tname = (tile) => { const t = Math.floor(tile / 4); return t < 27 ? `${t % 9 + 1}${"mps"[Math.floor(t / 9)]}` : ["east","south","west","north","white","green","red"][t - 27]; };
+
+// ---- state + api
+let G = null, riichiMode = false, opponent = "ppo";
+
+async function api(path, body) {
+  const opt = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const res = await fetch(path, opt);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}
+function showError(e) { document.getElementById("error").textContent = e ? `(╥﹏╥) ${e.message || e}` : ""; }
+
+async function newGame() {
+  showError(null); riichiMode = false;
+  try {
+    G = await api("/game/new", { opponent });
+    document.getElementById("log").innerHTML = "";
+    log(G.events);
+    render();
+  } catch (e) { showError(e); }
+}
+
+async function act(action) {
+  showError(null);
+  try {
+    G = await api(`/game/${G.game_id}/action`, { action });
+    riichiMode = false;
+    log(G.events);
+    render();
+  } catch (e) { showError(e); }
+}
+
+function log(events) {
+  const box = document.getElementById("log");
+  for (const ev of events) {
+    const li = document.createElement("li");
+    if (ev.startsWith("You")) li.className = "you";
+    li.textContent = ev; box.appendChild(li);
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+// ---- rendering
+function seatBlock(seat) {
+  const rel = (seat - G.you + 4) % 4;
+  const div = document.createElement("div");
+  div.className = `seat pos-${POS[rel]}`;
+  const tags = [`<span class="tag">${WIND_KANJI[G.seat_winds[seat] - 27]}</span>`];
+  if (seat === G.dealer) tags.push('<span class="tag">dealer</span>');
+  if (G.riichi[seat]) tags.push('<span class="tag riichi">♡ riichi</span>');
+  if (G.turn === seat && !G.done) tags.push('<span class="tag turn">⟡ to act</span>');
+  div.innerHTML = `<h3>${REL[rel]}${tags.join("")}</h3>`;
+  const river = document.createElement("div"); river.className = "river";
+  G.discards[seat].forEach((t, i) => {
+    const hl = G.phase === "ron" && seat === G.pending_from && i === G.discards[seat].length - 1;
+    river.appendChild(tileEl(t, "small" + (hl ? " hl" : "")));
+  });
+  div.appendChild(river);
+  return div;
+}
+
+function render() {
+  const board = document.getElementById("board");
+  board.innerHTML = "";
+  for (let seat = 0; seat < 4; seat++) {
+    const block = seatBlock(seat);
+    if (seat === G.you) {
+      const hand = document.createElement("div"); hand.className = "hand-row";
+      const legalDiscard = new Set(G.legal.filter(a => a < 34));
+      const legalRiichi = new Set(G.legal.filter(a => a >= 34 && a < 68).map(a => a - 34));
+      const mk = (tile) => {
+        const t = Math.floor(tile / 4);
+        const ok = riichiMode ? legalRiichi.has(t) : legalDiscard.has(t);
+        const el = tileEl(tile, ok ? "clickable" : (G.legal.length && G.phase === "turn" ? "dim" : ""));
+        if (ok) {
+          const go = () => act(riichiMode ? 34 + t : t);
+          el.tabIndex = 0; el.setAttribute("role", "button"); el.setAttribute("aria-label", `discard ${tname(tile)}`);
+          el.onclick = go; el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+        }
+        return el;
+      };
+      G.hand.forEach(t => hand.appendChild(mk(t)));
+      if (G.drawn_tile !== null) {
+        const gap = document.createElement("div"); gap.className = "gap"; hand.appendChild(gap);
+        hand.appendChild(mk(G.drawn_tile));
+      }
+      block.appendChild(hand);
+    }
+    board.appendChild(block);
+  }
+  const center = document.createElement("div"); center.id = "center";
+  center.innerHTML = `<div class="label">east round · wall ${G.wall_remaining}</div><div class="label">✧ dora indicator ✧</div>`;
+  const dora = document.createElement("div");
+  G.dora_indicators.forEach(t => dora.appendChild(tileEl(t, "small")));
+  center.appendChild(dora);
+  if (G.furiten) center.insertAdjacentHTML("beforeend", '<div class="label" style="color:var(--lose)">you are furiten ˚₊‧</div>');
+  board.appendChild(center);
+
+  const c = document.getElementById("controls"); c.innerHTML = "";
+  const has = (a) => G.legal.includes(a);
+  const btn = (label, cls, fn) => { const b = document.createElement("button"); b.textContent = label; b.className = "pill " + (cls || ""); b.onclick = fn; c.appendChild(b); };
+  if (has(68)) btn("tsumo! ✧", "primary", () => act(68));
+  if (has(69)) btn("ron! ✧", "primary", () => act(69));
+  if (has(70)) btn("pass", "", () => act(70));
+  if (G.legal.some(a => a >= 34 && a < 68)) {
+    btn(riichiMode ? "riichi ♡ on (pick a discard)" : "riichi ♡", riichiMode ? "on" : "", () => { riichiMode = !riichiMode; render(); });
+  }
+
+  const st = document.getElementById("status");
+  if (G.done) st.textContent = "hand over ⋆｡°";
+  else if (G.phase === "ron") st.textContent = `${REL[(G.pending_from - G.you + 4) % 4]} discarded ${tname(G.pending_tile)} — you can win with it! ron, or pass.`;
+  else if (riichiMode) st.textContent = "riichi: pick the tile to discard (the lifted ones keep you tenpai).";
+  else if (G.riichi[G.you]) st.textContent = "you're in riichi, so your hand is locked. discard the drawn tile (or tsumo).";
+  else st.textContent = "your turn ♡ click a tile to discard.";
+
+  renderResult();
+}
+
+function renderResult() {
+  const box = document.getElementById("result");
+  if (!G.done) { box.style.display = "none"; return; }
+  const r = G.result, name = (p) => REL[(p - G.you + 4) % 4];
+  let head, kao;
+  if (r.kind === "draw") { head = "draw: the wall ran out, nobody wins."; kao = " /ᐠ - ˕ -マ  zzz"; }
+  else if (r.winner === G.you) { head = r.kind === "tsumo" ? "you win by tsumo!" : `you win by ron off ${name(r.loser)}!`; kao = "ฅ(•ㅅ•❀)ฅ  ✧˖° yay!"; }
+  else { head = r.kind === "tsumo" ? `${name(r.winner)} wins by tsumo.` : `${name(r.winner)} wins by ron off ${name(r.loser)}.`; kao = "ฅ(╥﹏╥)ฅ  next hand!"; }
+  let html = `<div class="kao">${kao}</div><h2>${head}</h2>`;
+  if (r.kind !== "draw") {
+    html += `<div>${r.han} han${r.fu ? ` · ${r.fu} fu` : ""} — ${r.points} points</div><ul>${r.yaku.map(y => `<li>${y}</li>`).join("")}</ul>`;
+    html += "<table><tr>" + r.deltas.map((d, p) => `<th>${name(p)}</th>`).join("") + "</tr><tr>" +
+      r.deltas.map(d => `<td class="${d > 0 ? "pos" : d < 0 ? "neg" : ""}">${d > 0 ? "+" : ""}${d}</td>`).join("") + "</tr></table>";
+  }
+  html += '<div id="hands"></div>';
+  box.innerHTML = html; box.style.display = "block";
+  const hands = box.querySelector("#hands");
+  G.final_hands.forEach((h, p) => {
+    const row = document.createElement("div"); row.className = "row"; row.innerHTML = `<span>${name(p)}</span>`;
+    h.forEach(t => row.appendChild(tileEl(t, "small"))); hands.appendChild(row);
+  });
+}
+
+// ---- nav, sparkles
+const press = (el, fn) => { el.onclick = fn; el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); } }; };
+press(document.getElementById("newBtn"), newGame);
+document.querySelectorAll("[data-opp]").forEach(a => press(a, () => {
+  opponent = a.dataset.opp;
+  document.querySelectorAll("[data-opp]").forEach(x => x.classList.toggle("active", x === a));
+  newGame();
+}));
+
+const sparkles = ["✧", "⋆", "♡", "✩"];
+let lastSpawn = 0;
+document.addEventListener("mousemove", (e) => {
+  const now = Date.now();
+  if (now - lastSpawn < 90) return;
+  lastSpawn = now;
+  const el = document.createElement("span");
+  el.className = "cursor-sparkle";
+  el.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+  el.style.left = `${e.clientX}px`; el.style.top = `${e.clientY}px`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+});
+
+newGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+.venv
+.venv-1
+.git
+.gitignore
+.pytest_cache
+__pycache__
+*.pyc
+runs
+mahjong_rl/tests
+Dockerfile
+.dockerignore
+README.md
