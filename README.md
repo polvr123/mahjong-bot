@@ -1,6 +1,7 @@
 # mahjong-bot ♡
 
 training a bot to play riichi mahjong, built a small version of the game, trained a bot on it by having it play against copies of itself, play here >>> 
+https://mahjong-bot-17p7.onrender.com 
 
 
 ## What's in here
