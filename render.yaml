@@ -1,0 +1,11 @@
+# Render Blueprint: builds the Dockerfile from this repo and runs it as a free web service.
+services:
+  - type: web
+    name: mahjong-bot
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"   # Render's default port; the Dockerfile's CMD reads $PORT
